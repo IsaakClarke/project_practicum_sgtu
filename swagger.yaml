@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: AutoDoc API — Документация Склада Автозапчастей
+  description: |
+    Данная спецификация описывает REST API для клиент-серверного взаимодействия интернет-магазина автозапчастей.
+    Включает в себя работу с каталогом товаров, фильтрацию по автомобилям и категориям, управление корзиной и оформление заказа.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Локальный сервер разработки (Node.js / Express)
+
+paths:
+  /products:
+    get:
+      summary: Получить список автозапчастей с фильтрацией
+      description: Возвращает массив деталей, соответствующих заданным параметрам поиска, категории или автомобиля.
+      parameters:
+        - name: searchQuery
+          in: query
+          description: Строка поиска (ищет по названию, бренду, артикулу или OEM-номеру)
+          required: false
+          schema:
+            type: string
+        - name: carId
+          in: query
+          description: ID автомобиля для фильтрации по совместимости
+          required: false
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          description: ID категории деталей
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный возврат списка товаров
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /products/{id}:
+    get:
+      summary: Получить подробную информацию о конкретном товаре
+      description: Используется при переходе из каталога на подробную карточку товара.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный ID автозапчасти
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Детальные данные товара найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Товар с указанным ID не найден
+
+  /categories:
+    get:
+      summary: Получить список категорий
+      description: Возвращает все доступные категории запчастей для левой панели фильтрации.
+      responses:
+        '200':
+          description: Список категорий успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+  /cars:
+    get:
+      summary: Получить список автомобилей
+      description: Возвращает список машин для фильтра по совместимости запчастей.
+      responses:
+        '200':
+          description: Список автомобилей получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Car'
+
+  /cart:
+    get:
+      summary: Получить текущий состав корзины
+      responses:
+        '200':
+          description: Текущие элементы корзины
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartItem'
+    
+    post:
+      summary: Добавить товар в корзину / увеличить количество
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+              properties:
+                productId:
+                  type: string
+                  example: "p1"
+      responses:
+        '200':
+          description: Товар успешно добавлен или количество увеличено
+        '400':
+          description: Ошибка добавления (например, превышен остаток на складе)
+
+  /cart/{productId}:
+    delete:
+      summary: Полностью удалить товар из корзины
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Товар удален из корзины
+
+  /cart/decrease/{productId}:
+    post:
+      summary: Уменьшить количество товара в корзине на 1
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Количество уменьшено (или товар удален, если количество стало 0)
+
+  /cart/clear:
+    post:
+      summary: Полностью очистить корзину
+      responses:
+        '200':
+          description: Корзина успешно очищена
+
+  /payment/checkout:
+    post:
+      summary: Оформить заказ и отправить чек
+      description: Фиксирует покупку, обрабатывает платеж и инициирует отправку чека на указанный Email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "ivanov@example.com"
+      responses:
+        '200':
+          description: Заказ успешно оформлен, чек отправлен
+        '400':
+          description: Ошибка при оформлении (например, пустая корзина)
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - brand
+        - article
+        - oem_numbers
+        - price
+        - stock
+        - category_id
+        - compatibility
+      properties:
+        id:
+          type: string
+          example: "p1"
+        name:
+          type: string
+          example: "Фильтр масляный"
+        brand:
+          type: string
+          example: "BOSCH"
+        article:
+          type: string
+          example: "0-451-103-313"
+        oem_numbers:
+          type: array
+          items:
+            type: string
+          example: ["210101012005", "210501012005"]
+        description:
+          type: string
+          example: "Обеспечивает высокую степень очистки моторного масла от механических примесей."
+        image:
+          type: string
+          format: uri
+          example: "https://images.unsplash.com/photo-1486006920555-c77dce18193b"
+        price:
+          type: number
+          format: float
+          example: 650.00
+        stock:
+          type: integer
+          example: 15
+        category_id:
+          type: string
+          example: "cat_filters"
+        compatibility:
+          type: array
+          items:
+            type: string
+          example: ["car_vaz_2107", "car_vaz_2105"]
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: "cat_filters"
+        name:
+          type: string
+          example: "Фильтры"
+
+    Car:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: "car_vaz_2107"
+        name:
+          type: string
+          example: "ВАЗ 2107"
+
+    CartItem:
+      type: object
+      required:
+        - product
+        - quantity
+      properties:
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: integer
+          example: 2
