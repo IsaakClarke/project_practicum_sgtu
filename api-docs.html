@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>AutoDoc API Documentation</title>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    html { box-sizing: border-box; overflow: -webkit-paged-x; }
+    *, *:before, *:after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+  </style>
+</head>
+<body>
+
+  <div id="swagger-ui"></div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+  
+  <script>
+    window.onload = function() {
+      // Прямо сюда вставляем JSON-версию твоей спецификации
+      const spec = {
+        "openapi": "3.0.3",
+        "info": {
+          "title": "AutoDoc API — Документация Склада Автозапчастей",
+          "description": "Данная спецификация описывает REST API для клиент-серверного взаимодействия интернет-магазина автозапчастей.\nВключает в себя работу с каталогом товаров, фильтрацию по автомобилям и категориям, управление корзиной и оформление заказа.",
+          "version": "1.0.0"
+        },
+        "servers": [
+          { "url": "http://localhost:3000/api", "description": "Локальный сервер разработки (Node.js / Express)" }
+        ],
+        "paths": {
+          "/products": {
+            "get": {
+              "summary": "Получить список автозапчастей с фильтрацией",
+              "parameters": [
+                { "name": "searchQuery", "in": "query", "required": false, "schema": { "type": "string" } },
+                { "name": "carId", "in": "query", "required": false, "schema": { "type": "string" } },
+                { "name": "categoryId", "in": "query", "required": false, "schema": { "type": "string" } }
+              ],
+              "responses": {
+                "200": { "description": "Успешный возврат списка товаров" }
+              }
+            }
+          },
+          "/products/{id}": {
+            "get": {
+              "summary": "Получить подробную информацию о конкретном товаре",
+              "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+              ],
+              "responses": {
+                "200": { "description": "Детальные данные товара найдены" },
+                "404": { "description": "Товар с указанным ID не найден" }
+              }
+            }
+          },
+          "/categories": {
+            "get": {
+              "summary": "Получить список категорий",
+              "responses": {
+                "200": { "description": "Список категорий успешно получен" }
+              }
+            }
+          },
+          "/cars": {
+            "get": {
+              "summary": "Получить список автомобилей",
+              "responses": {
+                "200": { "description": "Список автомобилей получен" }
+              }
+            }
+          },
+          "/cart": {
+            "get": {
+              "summary": "Получить текущий состав корзины",
+              "responses": { "200": { "description": "Текущие элементы корзины" } }
+            },
+            "post": {
+              "summary": "Добавить товар в корзину / увеличить количество",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": { "productId": { "type": "string", "example": "p1" } }
+                    }
+                  }
+                }
+              },
+              "responses": { "200": { "description": "Успешно" } }
+            }
+          },
+          "/cart/{productId}": {
+            "delete": {
+              "summary": "Полностью удалить товар из корзины",
+              "parameters": [{ "name": "productId", "in": "path", "required": true, "schema": { "type": "string" } }],
+              "responses": { "200": { "description": "Товар удален" } }
+            }
+          },
+          "/payment/checkout": {
+            "post": {
+              "summary": "Оформить заказ и отправить чек",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": { "email": { "type": "string", "example": "ivanov@example.com" } }
+                    }
+                  }
+                }
+              },
+              "responses": { "200": { "description": "Заказ успешно оформлен" } }
+            }
+          }
+        }
+      };
+
+      // Инициализируем Swagger UI и передаем ему наш объект конфигурации
+      const ui = SwaggerUIBundle({
+        spec: spec, // Передаем спецификацию напрямую без внешних файлов
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "BaseLayout"
+      });
+      window.ui = ui;
+    };
+  </script>
+</body>
+</html>
